@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka&family=Montserrat&display=swap" rel="stylesheet">
+
+<style>
+body{
+  font-family:'Montserrat',sans-serif;
+  background:#0f0f0f;
+  color:white;
+  margin:0;
+  transition:0.3s;
+}
+body.light-mode{background:#f9f9f9;color:#000;}
+
+.container{max-width:500px;margin:auto;padding:15px;}
+h1{font-family:'Fredoka';text-align:center;}
+
+/* NAV */
+.top-nav{display:flex;gap:10px;margin:15px 0;}
+.top-nav button{
+  flex:1;
+  font-family:'Fredoka';
+  background:#4FC3F7;
+  padding:14px;
+  border-radius:16px;
+  border:none;
+  color:white;
+}
+
+/* PAGE */
+.page{
+  opacity:0;
+  transform:translateY(10px);
+  pointer-events:none;
+  height:0;
+  overflow:hidden;
+  transition:0.3s;
+}
+.page.active{
+  opacity:1;
+  transform:translateY(0);
+  pointer-events:auto;
+  height:auto;
+}
+
+/* INPUT */
+.input-group{display:flex;flex-direction:column;gap:12px;}
+input,select,textarea,button{
+  padding:14px;
+  border-radius:14px;
+  border:none;
+  font-size:16px;
+}
+
+#addTaskBtn{background:#4CAF50;color:white;font-family:'Fredoka';}
+
+/* TASK */
+ul{padding:0;}
+li{
+  list-style:none;
+  background:#1f1f1f;
+  margin:10px 0;
+  padding:15px;
+  border-radius:16px;
+  animation:fadeIn 0.3s ease;
+}
+body.light-mode li{background:#e0e0e0;}
+
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(10px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+.priority-high{border-left:6px solid red;}
+.priority-medium{border-left:6px solid gold;}
+.priority-low{border-left:6px solid limegreen;}
+.overdue{border:2px solid red;}
+
+.task-top{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+}
+.task-top input[type="checkbox"]{
+  transform:scale(1.4);
+  margin-top:10px;
+}
+textarea{flex:1;min-height:45px;}
+
+.delete-btn{
+  width:42px;height:42px;border-radius:12px;
+  background:red;display:flex;align-items:center;justify-content:center;
+}
+
+.task-bottom{
+  margin-top:8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+/* SETTINGS */
+.setting-group{display:flex;flex-direction:column;gap:6px;margin-bottom:15px;}
+#monthSelect{width:100%;margin-top:10px;}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>📋 My To-Do List</h1>
+
+<div class="top-nav">
+  <button onclick="showPage('tasks')">📝 Tasks</button>
+  <button onclick="showPage('reports')">📊 Reports</button>
+  <button onclick="showPage('settings')">⚙️ Settings</button>
+</div>
+
+<!-- TASK -->
+<div id="tasks" class="page active">
+  <div class="input-group">
+    <input id="taskInput" placeholder="Enter task">
+    <input id="deadlineInput" type="date">
+    <select id="priorityInput"></select>
+    <button id="addTaskBtn">➕ Add Task</button>
+  </div>
+  <ul id="list"></ul>
+</div>
+
+<!-- REPORT -->
+<div id="reports" class="page">
+  <h2>📊 Monthly Report</h2>
+  <select id="monthSelect"></select>
+</div>
+
+<!-- SETTINGS -->
+<div id="settings" class="page">
+  <div class="setting-group">
+    <label>Theme - 🌗</label>
+    <select id="themeSelect">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+    </select>
+  </div>
+
+  <div class="setting-group">
+    <label>Language - 🌏</label>
+    <select id="languageSelect">
+      <option value="en">English</option>
+      <option value="vi">Vietnamese</option>
+    </select>
+  </div>
+</div>
+
+</div>
+
+<script>
+let tasks=[];
+
+/* LANGUAGE */
+let currentLang=localStorage.getItem("lang")||"en";
+
+const lang={
+  en:{
+    title:"📋 My To-Do List",
+    tasks:"📝 Tasks",
+    reports:"📊 Reports",
+    settings:"⚙️ Settings",
+    enter:"Enter task",
+    add:"➕ Add Task",
+    monthly:"📊 Monthly Report",
+    theme:"Theme - 🌗",
+    language:"Language - 🌏",
+    low:"🟢 Low",
+    medium:"🟡 Medium",
+    high:"🔴 High"
+  },
+  vi:{
+    title:"📋 Danh sách công việc",
+    tasks:"📝 Nhiệm vụ",
+    reports:"📊 Báo cáo",
+    settings:"⚙️ Cài đặt",
+    enter:"Nhập nhiệm vụ",
+    add:"➕ Thêm nhiệm vụ",
+    monthly:"📊 Báo cáo tháng",
+    theme:"Giao diện - 🌗",
+    language:"Ngôn ngữ - 🌏",
+    low:"🟢 Thấp",
+    medium:"🟡 Trung bình",
+    high:"🔴 Cao"
+  }
+};
+
+function updateLanguage(){
+  let t=lang[currentLang];
+
+  document.querySelector("h1").textContent=t.title;
+
+  let nav=document.querySelectorAll(".top-nav button");
+  nav[0].textContent=t.tasks;
+  nav[1].textContent=t.reports;
+  nav[2].textContent=t.settings;
+
+  document.getElementById("taskInput").placeholder=t.enter;
+  document.getElementById("addTaskBtn").textContent=t.add;
+  document.querySelector("#reports h2").textContent=t.monthly;
+
+  let labels=document.querySelectorAll(".setting-group label");
+  labels[0].textContent=t.theme;
+  labels[1].textContent=t.language;
+
+  document.getElementById("priorityInput").innerHTML=`
+    <option value="low">${t.low}</option>
+    <option value="medium">${t.medium}</option>
+    <option value="high">${t.high}</option>
+  `;
+}
+
+document.getElementById("languageSelect").onchange=(e)=>{
+  currentLang=e.target.value;
+  localStorage.setItem("lang",currentLang);
+  updateLanguage();
+  render();
+};
+
+/* NAV */
+function showPage(id){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+/* SORT */
+function sortTasks(){
+  const order={high:0,medium:1,low:2};
+  tasks.sort((a,b)=>order[a.priority]-order[b.priority]);
+}
+
+/* FORMAT DATE */
+function formatDate(d){
+  let date=new Date(d);
+  return `${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}/${String(date.getFullYear()).slice(-2)}`;
+}
+
+/* RENDER */
+function render(){
+  sortTasks();
+  let list=document.getElementById("list");
+  list.innerHTML="";
+
+  let today=new Date(); today.setHours(0,0,0,0);
+
+  tasks.forEach((t,i)=>{
+    let li=document.createElement("li");
+    li.classList.add(`priority-${t.priority}`);
+
+    if(t.deadline&&!t.done){
+      let d=new Date(t.deadline); d.setHours(0,0,0,0);
+      if(d<today) li.classList.add("overdue");
+    }
+
+    li.innerHTML=`
+      <div class="task-top">
+        <input type="checkbox" ${t.done?"checked":""} onclick="toggle(${i})">
+        <textarea onchange="edit(${i},this.value)">${t.text}</textarea>
+        <button class="delete-btn" onclick="del(${i})">❌</button>
+      </div>
+
+      <div class="task-bottom">
+        <input type="date" value="${t.deadline||''}" onchange="updateDate(${i},this.value)">
+        <select onchange="updatePriority(${i},this.value)">
+          <option value="low" ${t.priority==="low"?"selected":""}>${lang[currentLang].low}</option>
+          <option value="medium" ${t.priority==="medium"?"selected":""}>${lang[currentLang].medium}</option>
+          <option value="high" ${t.priority==="high"?"selected":""}>${lang[currentLang].high}</option>
+        </select>
+        <span>${t.deadline?"📅 "+formatDate(t.deadline):""}</span>
+      </div>
+    `;
+
+    list.appendChild(li);
+  });
+}
+
+/* ACTIONS */
+function updatePriority(i,v){tasks[i].priority=v;save();render();}
+function updateDate(i,v){tasks[i].deadline=v;save();render();}
+function toggle(i){tasks[i].done=!tasks[i].done;save();render();}
+function del(i){tasks.splice(i,1);save();render();}
+function edit(i,v){tasks[i].text=v;save();}
+
+/* ADD */
+document.getElementById("addTaskBtn").onclick=()=>{
+  let t=document.getElementById("taskInput");
+  let d=document.getElementById("deadlineInput");
+  let p=document.getElementById("priorityInput");
+
+  if(!t.value.trim()) return;
+
+  tasks.push({text:t.value,deadline:d.value,priority:p.value,done:false});
+  t.value=""; d.value="";
+  save(); render();
+};
+
+/* STORAGE */
+function save(){localStorage.setItem("tasks",JSON.stringify(tasks));}
+function load(){tasks=JSON.parse(localStorage.getItem("tasks"))||[];}
+
+/* THEME */
+document.getElementById("themeSelect").onchange=(e)=>{
+  document.body.classList.toggle("light-mode",e.target.value==="light");
+};
+
+/* INIT */
+load();
+updateLanguage();
+document.getElementById("languageSelect").value=currentLang;
+render();
+</script>
+
+</body>
+</html>
